@@ -17,7 +17,7 @@ countlyDb.collection('apps').find({}).toArray(function (err, apps) {
         countlyDb.createCollection('app_event' + app._id, {capped: true, size: 10000000, max: 1000}, cb);
     }
     async.forEach(apps, upgrade, function(){
-        console.log("Logger plugin installation finished");
+        console.log("Notifer plugin installation finished");
         countlyDb.close();
     });
 });

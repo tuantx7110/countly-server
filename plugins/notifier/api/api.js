@@ -48,12 +48,18 @@ log = common.log('notifier:api');
 
                         log.d(count);
 
-                        if(count>0)
+                        if(count>50)
                         {
+                            var notification={};
+                            notification.event={};
+                            notification.event.total_session_count_reached=true;
                             log.d("a number of sessions reached");
-                            plugins.dispatch("/listener", {params:params});
+                            plugins.dispatch("/listener", {params:params,notification:notification});
                         }
                     });
+
+
+
 
                 });
 

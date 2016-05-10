@@ -7,7 +7,11 @@ log = common.log('listener:api');
 	//write api call
 
 	plugins.register("/listener", function(ob){
-		log.d("receve the notification")
+		var notification=ob.notification;
+		if(notification.event.total_session_count_reached)
+        {
+            log.d("Total session count reached 100");
+        }
 	});
 
 }(plugin));

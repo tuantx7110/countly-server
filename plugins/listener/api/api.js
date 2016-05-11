@@ -29,7 +29,7 @@ mail = require("../../../api/parts/mgmt/mail");
 
         common.db.collection("members").findOne({'admin_of':{$in:[app_id]}},function(err,member)
         {
-            log.d("app_id"+app_id);
+           
 
             if (member && !err) {
 

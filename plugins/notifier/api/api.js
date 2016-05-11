@@ -38,17 +38,18 @@ log = common.log('notifier:api');
                 var type = "session";
                 var info = {"begin_session":params.qstring.begin_session};
                 //store session
+                //check the number of account reached 100 today
                 common.db.collection('app_event' + params.app_id).insert({ts:ts, reqts:now, d:device, l:location, v:version, t:type, i:info}, function () {
 
                     //count sessions
                     var startDay=Math.round(moment().startOf('day').unix()/1000);
                     var numberOfSessions=0;
 
-                    common.db.collection('app_event' + params.app_id).find({ts:{$gt:startDay,$lt:now}}).count(function(err, count) {
+                    common.db.collection('app_event' + params.app_id).find({'ts':{$gt:startDay,$lt:now},'i.begin_session':{$ne:null}}).count(function(err, count) {
 
                         log.d(count);
 
-                        if(count>50)
+                        if(count>100)
                         {
                             var notification={};
                             notification.event={};
@@ -57,68 +58,152 @@ log = common.log('notifier:api');
                             plugins.dispatch("/listener", {params:params,notification:notification});
                         }
                     });
-
-
-
-
                 });
 
+                //check if session have user property ""platform"="android"
+                if(device.p.toLowerCase()=="android")
+                {
+                    var notification={};
+                    notification.event={};
+                    notification.event.session_with_user_property=true;
+                    plugins.dispatch("/listener", {params:params,notification:notification});
+                }
+
+
             }
-            if (params.qstring.session_duration) {
-                known = true;
-                var type = "session";
-                var info = {"session_duration":params.qstring.session_duration};
-                common.db.collection('app_event' + params.app_id).insert({ts:ts, reqts:now, d:device, l:location, v:version, t:type, i:info}, function () {});
-            }
-            if (params.qstring.end_session) {
-                known = true;
-                var type = "session";
-                var info = {"end_session":params.qstring.end_session};
-                common.db.collection('app_event' + params.app_id).insert({ts:ts, reqts:now, d:device, l:location, v:version, t:type, i:info}, function () {});
-            }
-            if (params.qstring.metrics) {
-                known = true;
-                var type = "metrics";
-                var info = params.qstring.metrics;
-                common.db.collection('app_event' + params.app_id).insert({ts:ts, reqts:now, d:device, l:location, v:version, t:type, i:info}, function () {});
-            }
+
             if (params.qstring.events) {
+                log.d("run here 1");
                 known = true;
                 var events = params.qstring.events;
-                if(events.constructor === Array)
-                    for (var i=0; i < events.length; i++) {
+                if(events.constructor === Array) {
+                    var iter=0
+                    for (var i = 0; i < events.length; i++) {
                         var type = "event";
                         var info = events[i];
-                        common.db.collection('app_event' + params.app_id).insert({ts:ts, reqts:now, d:device, l:location, v:version, t:type, i:info}, function () {});
+                        //check if event play and segmentation with Character =Jon
+                        common.db.collection('app_event' + params.app_id).insert({
+                            ts: ts,
+                            reqts: now,
+                            d: device,
+                            l: location,
+                            v: version,
+                            t: type,
+                            i: info
+                        }, function () {
+                            if (info.key.toLowerCase() == 'play' && info.segmentation && info.segmentation['Character'] == 'John') {
+
+                                iter=iter+1;
+                                if (iter == events.length) {
+                                    var startDay = Math.round(moment().startOf('day').unix() / 1000);
+                                    common.db.collection('app_event' + params.app_id).aggregate([
+                                        {
+                                            $match: {
+                                                'i.segmentation.Character': 'John',
+                                                "i.key":"Play",
+                                                'ts':{$gt:startDay,$lt:now}
+
+                                            }
+                                        },
+                                        {
+                                            $group: {
+                                                '_id': null,
+                                                'total': {
+                                                    $sum: '$i.sum'
+                                                }
+                                            }
+                                        }
+
+                                    ], function (err, result) {
+                                        if(err)log.d(err);
+                                        if (!err && result) {
+                                            log.d(JSON.stringify(result));
+                                            if(result[0].total>7)
+                                            {
+                                                //send notification to listener
+                                                var notification = {};
+                                                notification.event = {};
+                                                notification.event.custem_event_segmentation = true;
+                                                plugins.dispatch("/listener", {
+                                                    params: params,
+                                                    notification: notification
+                                                });
+                                            }
+
+                                        }
+
+                                    });
+
+                                }
+                            }
+
+                        });
+
                     }
+                }
                 else{
+                    log.d("run here 2");
                     var type = "event";
                     var info = events;
-                    common.db.collection('app_event' + params.app_id).insert({ts:ts, reqts:now, d:device, l:location, v:version, t:type, i:info}, function () {});
+
+                    common.db.collection('app_event' + params.app_id).insert({
+                        ts: ts,
+                        reqts: now,
+                        d: device,
+                        l: location,
+                        v: version,
+                        t: type,
+                        i: info
+                        }, function () {
+                        if (info.key.toLowerCase() == 'play' && info.segmentation && info.segmentation['Character'] == 'John') {
+
+                                var startDay = Math.round(moment().startOf('day').unix() / 1000);
+                                common.db.collection('app_event' + params.app_id).aggregate([
+                                    {
+                                        $match: {
+                                            'i.segmentation.Character': 'John',
+                                            "i.key":"Play",
+                                            'ts':{$gt:startDay,$lt:now}
+
+                                        }
+                                    },
+                                    {
+                                        $group: {
+                                            '_id': null,
+                                            'total': {
+                                                $sum: '$i.sum'
+                                            }
+                                        }
+                                    }
+
+                                ], function (err, result) {
+                                    if(err)log.d(err);
+                                    if (!err && result) {
+                                        log.d(JSON.stringify(result));
+                                        if(result[0].total>7)
+                                        {
+                                            //send notification to listener
+                                            var notification = {};
+                                            notification.event = {};
+                                            notification.event.custem_event_segmentation = true;
+                                            plugins.dispatch("/listener", {
+                                                params: params,
+                                                notification: notification
+                                            });
+                                        }
+
+                                    }
+
+                                });
+
+                        }
+
+                    });
+
                 }
 
             }
-            if (params.qstring.user_details) {
-                known = true;
-                var type = "user_details";
-                var info = params.qstring.user_details;
-                common.db.collection('app_event' + params.app_id).insert({ts:ts, reqts:now, d:device, l:location, v:version, t:type, i:info}, function () {});
-            }
-            if (params.qstring.crash) {
-                known = true;
-                var type = "crash";
-                var info = params.qstring.crash;
-                common.db.collection('app_event' + params.app_id).insert({ts:ts, reqts:now, d:device, l:location, v:version, t:type, i:info}, function () {});
-            }
-            if(!known){
-                var type = "unknown";
-                var info = {};
-                for(var i in params.qstring){
-                    if(i != "app_key" && i != "device_id" && i != "ip_address" && i != "timestamp")
-                        info[i] = params.qstring[i];
-                }
-                common.db.collection('app_event' + params.app_id).insert({ts:ts, reqts:now, d:device, l:location, v:version, t:type, i:info}, function () {});
-            }
+
         });
     });
 

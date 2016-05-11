@@ -11,6 +11,7 @@ var mail = {},
 mail.smtpTransport = nodemailer.createTransport(sendmailTransport({
     path: "/usr/sbin/sendmail"
 }));
+
 /*
  Use the below transport to send mails through Gmail
 
@@ -36,6 +37,8 @@ mail.smtpTransport = nodemailer.createTransport(sendmailTransport({
         }
     });
 */
+
+
 
 mail.sendMail = function(message, callback) {
     mail.smtpTransport.sendMail(message, function (error) {

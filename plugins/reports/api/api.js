@@ -5,6 +5,7 @@ var plugin = {},
     reports = require("./reports"),
     time = require('time'),
     plugins = require('../../pluginManager.js');
+log = common.log('reports:api');
 
 plugins.setConfigs("reports", {
     use_cron:true
@@ -14,8 +15,18 @@ var dir = path.resolve(__dirname, '');
 var logpath = path.resolve(__dirname, '../../../log/countly-api.log');
 var crontab;
 cron.load(function(err, tab){
+    
     crontab = tab;
 });
+if(crontab)
+{
+    log.d("have crontab");
+}
+else
+{
+    log.d("don't have crontab");
+}
+
 (function (plugin) {
 	plugins.register("/o/reports", function(ob){
 		var params = ob.params;
